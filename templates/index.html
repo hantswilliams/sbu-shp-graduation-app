@@ -5,18 +5,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student List</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
     <script>
         function searchStudents() {
             const searchQuery = document.getElementById('search-input').value.toLowerCase();
-            const studentList = document.getElementById('student-list');
-            const students = studentList.getElementsByTagName('li');
+            const tableRows = document.getElementById('student-table').getElementsByTagName('tr');
             
-            for (let i = 0; i < students.length; i++) {
-                const studentText = students[i].innerText.toLowerCase();
-                if (studentText.includes(searchQuery)) {
-                    students[i].style.display = "block";
+            for (let i = 1; i < tableRows.length; i++) {  // Start from 1 to skip the header row
+                const rowText = tableRows[i].innerText.toLowerCase();
+                if (rowText.includes(searchQuery)) {
+                    tableRows[i].style.display = "";
                 } else {
-                    students[i].style.display = "none";
+                    tableRows[i].style.display = "none";
                 }
             }
         }
@@ -25,23 +38,54 @@
 <body>
     <h1>Student List</h1>
     <a href="/student/add">Add New Student</a>
+    <a href="/scan/advanced">Scan QR Code</a>
     <br><br>
-    <input type="text" id="search-input" onkeyup="searchStudents()" placeholder="Search for students...">
-    <ul id="student-list">
-        {% for student in students %}
-            <li>
-                {{ student.first_name }} {{ student.last_name }} - {{ student.department }} - {{ student.email }}
-                <a href="/student/{{ student.id }}">View Details</a>
-                <a href="/student/{{ student.id }}/edit">Edit</a>
-                <form action="/student/{{ student.id }}/delete" method="POST" style="display:inline;">
-                    <button type="submit">Delete</button>
-                </form>
-                <a href="/student/{{ student.id }}/qrcode">Generate QR Code</a>
-                {% if student.qr_code_file %}
-                    <a href="/static/qrcodes/{{ student.qr_code_file }}" download>Download QR Code</a>
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+
+    <!-- add in margin and padding to the search container of 10px -->
+    <div class="search-container" style="margin: 10px; padding: 10px;">
+        <input type="text" id="search-input" onkeyup="searchStudents()" placeholder="Search for students...">
+    </div>
+    
+    <table id="student-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Email</th>
+                <th>Audio Preview</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+                <tr>
+                    <td>{{ student.first_name }} {{ student.last_name }}</td>
+                    <td>{{ student.department }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>
+                        {% if student.audio_file %}
+                            <audio controls>
+                                <source src="/student/{{ student.id }}/audio" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% else %}
+                            No Audio Available
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/student/{{ student.id }}">View Details</a> |
+                        <a href="/student/{{ student.id }}/edit">Edit</a> |
+                        <form action="/student/{{ student.id }}/delete" method="POST" style="display:inline;">
+                            <button type="submit">Delete</button>
+                        </form> |
+                        <a href="/student/{{ student.id }}/qrcode">Generate QR Code</a>
+                        {% if student.qr_code_file %}
+                            | <a href="/static/qrcodes/{{ student.qr_code_file }}" download>Download QR Code</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>

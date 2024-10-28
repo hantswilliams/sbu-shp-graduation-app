@@ -1,43 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Student</title>
-</head>
-<body>
-    <h1>Edit Student</h1>
-    <form action="" method="POST" enctype="multipart/form-data">
-        <label for="first_name">First Name:</label>
-        <input type="text" id="first_name" name="first_name" value="{{ student.first_name }}" required><br>
-
-        <label for="last_name">Last Name:</label>
-        <input type="text" id="last_name" name="last_name" value="{{ student.last_name }}" required><br>
-
-        <label for="department">Department:</label>
-        <input type="text" id="department" name="department" value="{{ student.department }}" required><br>
-
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" value="{{ student.email }}" required><br>
-
-        <label for="audio">Audio File (optional):</label>
-        <input type="file" id="audio" name="audio" accept="audio/*"><br>
-        {% if student.audio_file %}
-            <p>Current Audio File:</p>
-            <audio controls>
-                <source src="/student/{{ student.id }}/audio" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-        {% endif %}
-
-        <button type="submit">Update Student</button>
-    </form>
-    <a href="/">Back to Student List</a>
-</body>
-</html> -->
-
-
-<!-- edit_student.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,10 +25,11 @@
 
         {% if student.audio_file %}
             <p>Current Audio File:</p>
-            <audio controls>
+            <audio id="currentAudio" controls>
                 <source src="/student/{{ student.id }}/audio" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>
+            <br>
         {% endif %}
 
         <h3>Or Record a New Audio File</h3>
@@ -82,54 +43,63 @@
     <a href="/">Back to Student List</a>
 
     <script>
-        let mediaRecorder;
-        let recordedChunks = [];
+        document.addEventListener('DOMContentLoaded', () => {
+            let mediaRecorder;
+            let recordedChunks = [];
+            let audioContext, gainNode, sourceNode;
 
-        document.getElementById('startRecord').addEventListener('click', async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+            // Recording functionality for new audio
+            const startRecordButton = document.getElementById('startRecord');
+            const stopRecordButton = document.getElementById('stopRecord');
 
-                recordedChunks = [];  // Clear previous chunks before recording a new audio
+            if (startRecordButton && stopRecordButton) {
+                startRecordButton.addEventListener('click', async () => {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream);
 
-                mediaRecorder.ondataavailable = event => {
-                    if (event.data.size > 0) {
-                        recordedChunks.push(event.data);
-                    }
-                };
+                        recordedChunks = [];  // Clear previous chunks before recording a new audio
 
-                mediaRecorder.onstop = () => {
-                    if (recordedChunks.length > 0) {
-                        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-                        const audioURL = URL.createObjectURL(blob);
-                        document.getElementById('recordedAudio').src = audioURL;
-
-                        // Convert audio to base64 to send with the form
-                        const reader = new FileReader();
-                        reader.readAsDataURL(blob);
-                        reader.onloadend = () => {
-                            document.getElementById('recordedAudioInput').value = reader.result;
+                        mediaRecorder.ondataavailable = event => {
+                            if (event.data.size > 0) {
+                                recordedChunks.push(event.data);
+                            }
                         };
-                    } else {
-                        alert("Recording failed. Please try again.");
+
+                        mediaRecorder.onstop = () => {
+                            if (recordedChunks.length > 0) {
+                                const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                                const audioURL = URL.createObjectURL(blob);
+                                document.getElementById('recordedAudio').src = audioURL;
+
+                                // Convert audio to base64 to send with the form
+                                const reader = new FileReader();
+                                reader.readAsDataURL(blob);
+                                reader.onloadend = () => {
+                                    document.getElementById('recordedAudioInput').value = reader.result;
+                                };
+                            } else {
+                                alert("Recording failed. Please try again.");
+                            }
+                        };
+
+                        mediaRecorder.start();
+                        startRecordButton.disabled = true;
+                        stopRecordButton.disabled = false;
+                    } catch (err) {
+                        console.error("Error accessing microphone: ", err);
+                        alert("Failed to access microphone. Please ensure that it is not being used by another application and try again.");
                     }
-                };
+                });
 
-                mediaRecorder.start();
-                document.getElementById('startRecord').disabled = true;
-                document.getElementById('stopRecord').disabled = false;
-            } catch (err) {
-                console.error("Error accessing microphone: ", err);
-                alert("Failed to access microphone. Please ensure that it is not being used by another application and try again.");
+                stopRecordButton.addEventListener('click', () => {
+                    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                        mediaRecorder.stop();
+                    }
+                    startRecordButton.disabled = false;
+                    stopRecordButton.disabled = true;
+                });
             }
-        });
-
-        document.getElementById('stopRecord').addEventListener('click', () => {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-            }
-            document.getElementById('startRecord').disabled = false;
-            document.getElementById('stopRecord').disabled = true;
         });
     </script>
 </body>

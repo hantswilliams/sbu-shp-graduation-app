@@ -8,6 +8,7 @@ import io
 from PIL import Image
 import base64
 import cv2
+from pydub import AudioSegment  # Add this import at the top
 
 # Flask App Setup
 app = Flask(__name__)
@@ -216,28 +217,6 @@ def api_update_student(id):
     return jsonify({"message": "Student updated successfully."}), 200
 
 
-# @app.route('/student/<int:id>/edit', methods=['GET', 'POST'])
-# def edit_student(id):
-#     student = Student.query.get_or_404(id)
-#     if request.method == 'POST':
-#         student.first_name = request.form['first_name']
-#         student.last_name = request.form['last_name']
-#         student.department = request.form['department']
-#         student.email = request.form['email']
-
-#         if 'audio' in request.files:
-#             audio = request.files['audio']
-#             if audio and audio.filename != '':
-#                 audio_filename = secure_filename(audio.filename)
-#                 student.audio_file = audio.read()  # Store the binary data in the database
-#                 student.audio_filename = audio_filename
-
-#         db.session.commit()
-#         return redirect(url_for('view_student', id=student.id))
-
-#     return render_template('edit_student.html', student=student)
-
-
 @app.route('/student/<int:id>/edit', methods=['GET', 'POST'])
 def edit_student(id):
     student = Student.query.get_or_404(id)
@@ -247,7 +226,7 @@ def edit_student(id):
         student.department = request.form['department']
         student.email = request.form['email']
 
-        # Handle uploaded audio file
+        # Handling uploaded audio file
         if 'audio' in request.files:
             audio = request.files['audio']
             if audio and audio.filename != '':
@@ -255,23 +234,37 @@ def edit_student(id):
                 student.audio_file = audio.read()  # Store the binary data in the database
                 student.audio_filename = audio_filename
 
-        # Handle recorded audio
-        recorded_audio = request.form.get('recorded_audio')
-        if recorded_audio:
-            # Extract base64 data and convert it back to binary
-            header, audio_data = recorded_audio.split(',', 1)
-            audio_binary = base64.b64decode(audio_data)
-            student.audio_file = audio_binary
-            student.audio_filename = "recorded_audio.webm"
+        # Process the recorded audio if provided
+        amplified_audio_data = request.form.get('recorded_audio')
+        if amplified_audio_data:
+            # Decode the base64 encoded data part from Data URL
+            header, encoded = amplified_audio_data.split(',', 1)
+            audio_data = base64.b64decode(encoded)
+
+            # Save the audio temporarily as webm
+            temp_webm_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_audio.webm')
+            with open(temp_webm_path, 'wb') as temp_file:
+                temp_file.write(audio_data)
+
+            # Convert webm to mp3
+            audio = AudioSegment.from_file(temp_webm_path, format="webm")
+            mp3_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{student.id}_audio.mp3")
+            audio.export(mp3_path, format="mp3")
+
+            # Save the MP3 data and filename in the database
+            with open(mp3_path, 'rb') as mp3_file:
+                student.audio_file = mp3_file.read()
+                student.audio_filename = f"{student.id}_audio.mp3"
+
+            os.remove(temp_webm_path)  # Clean up temporary webm file
 
         db.session.commit()
         return redirect(url_for('view_student', id=student.id))
 
     return render_template('edit_student.html', student=student)
 
-
 # Run the App
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, port=5007, host='0.0.0.0')
+    app.run(debug=True, port=5009, host='0.0.0.0')
