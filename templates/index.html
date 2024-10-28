@@ -5,15 +5,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student List</title>
+    <script>
+        function searchStudents() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const studentList = document.getElementById('student-list');
+            const students = studentList.getElementsByTagName('li');
+            
+            for (let i = 0; i < students.length; i++) {
+                const studentText = students[i].innerText.toLowerCase();
+                if (studentText.includes(searchQuery)) {
+                    students[i].style.display = "block";
+                } else {
+                    students[i].style.display = "none";
+                }
+            }
+        }
+    </script>
 </head>
 <body>
     <h1>Student List</h1>
     <a href="/student/add">Add New Student</a>
-    <ul>
+    <br><br>
+    <input type="text" id="search-input" onkeyup="searchStudents()" placeholder="Search for students...">
+    <ul id="student-list">
         {% for student in students %}
             <li>
                 {{ student.first_name }} {{ student.last_name }} - {{ student.department }} - {{ student.email }}
-                <a href="/student/email?email={{ student.email }}">View Details</a>
+                <a href="/student/{{ student.id }}">View Details</a>
                 <a href="/student/{{ student.id }}/edit">Edit</a>
                 <form action="/student/{{ student.id }}/delete" method="POST" style="display:inline;">
                     <button type="submit">Delete</button>

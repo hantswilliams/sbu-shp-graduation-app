@@ -24,7 +24,11 @@
         <label for="audio">Audio File (optional):</label>
         <input type="file" id="audio" name="audio" accept="audio/*"><br>
         {% if student.audio_file %}
-            <p>Current Audio File: {{ student.audio_file }}</p>
+            <p>Current Audio File:</p>
+            <audio controls>
+                <source src="/student/{{ student.id }}/audio" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
         {% endif %}
 
         <button type="submit">Update Student</button>
