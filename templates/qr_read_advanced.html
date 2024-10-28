@@ -1,0 +1,82 @@
+<!-- qr_read_advanced.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced QR Code Scanner</title>
+    <style>
+        #container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        #reader {
+            width: 50%;
+        }
+        #student-info {
+            width: 45%;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced QR Code Scanner</h1>
+    <div id="container">
+        <div id="reader"></div>
+        <div id="student-info">
+            <h2>Student Information</h2>
+            <div id="student-details">
+                <p>No student scanned yet.</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.2.1/html5-qrcode.min.js"></script>
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            // Handle the result of the scan
+            let studentData = {};
+            decodedText.split(',').forEach(function(part) {
+                let keyValue = part.split(':');
+                studentData[keyValue[0].trim()] = keyValue[1].trim();
+            });
+
+            if (studentData['id']) {
+                // Fetch student data via AJAX
+                fetch(`/api/student/${studentData['id']}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update the student-info section with the retrieved data
+                        document.getElementById('student-details').innerHTML = `
+                            <h3>${data.first_name} ${data.last_name}</h3>
+                            <p><strong>Department:</strong> ${data.department}</p>
+                            <p><strong>Email:</strong> ${data.email}</p>
+                            ${data.audio_file ? `<audio controls>
+                                <source src="/static/uploads/${data.audio_file}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : '<p>No audio file available.</p>'}
+                        `;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching student data:', error);
+                        alert('Failed to fetch student data.');
+                    });
+            } else {
+                alert('Invalid QR code format: ID not found.');
+            }
+        }
+
+        function onScanFailure(error) {
+            // Handle scan failure, output error if desired
+            console.warn(`QR code scan error: ${error}`);
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 250 }
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+    <a href="/">Back to Student List</a>
+</body>
+</html>

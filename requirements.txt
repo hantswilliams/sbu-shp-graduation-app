@@ -1,0 +1,6 @@
+flask
+flask-sqlalchemy
+werkzeug
+pillow
+qrcode
+opencv-python

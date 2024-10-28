@@ -1,0 +1,41 @@
+<!-- scan_qr.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan QR Code</title>
+</head>
+<body>
+    <h1>Scan QR Code</h1>
+    <div style="width: 100%;" id="reader"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.2.1/html5-qrcode.min.js"></script>
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            // Handle the result of the scan
+            let studentData = {};
+            decodedText.split(',').forEach(function(part) {
+                let keyValue = part.split(':');
+                studentData[keyValue[0].trim()] = keyValue[1].trim();
+            });
+
+            if (studentData['id']) {
+                window.location.href = `/student/${studentData['id']}`;
+            } else {
+                alert('Invalid QR code format: ID not found.');
+            }
+        }
+
+        function onScanFailure(error) {
+            // Handle scan failure, output error if desired
+            console.warn(`QR code scan error: ${error}`);
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 500 }
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+    <a href="/">Back to Student List</a>
+</body>
+</html>

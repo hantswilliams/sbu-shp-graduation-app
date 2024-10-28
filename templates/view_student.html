@@ -1,0 +1,27 @@
+<!-- view_student.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Student</title>
+</head>
+<body>
+    <h1>{{ student.first_name }} {{ student.last_name }}</h1>
+    <p><strong>Department:</strong> {{ student.department }}</p>
+    <p><strong>Email:</strong> {{ student.email }}</p>
+    {% if student.audio_file %}
+        <audio controls>
+            <source src="/static/uploads/{{ student.audio_file }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    {% else %}
+        <p>No audio file available.</p>
+    {% endif %}
+    {% if student.qr_code_file %}
+        <h2>QR Code</h2>
+        <img src="/static/qrcodes/{{ student.qr_code_file }}" alt="QR Code">
+    {% endif %}
+    <a href="/">Back to Student List</a>
+</body>
+</html>

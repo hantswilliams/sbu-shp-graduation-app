@@ -1,0 +1,28 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student List</title>
+</head>
+<body>
+    <h1>Student List</h1>
+    <a href="/student/add">Add New Student</a>
+    <ul>
+        {% for student in students %}
+            <li>
+                {{ student.first_name }} {{ student.last_name }} - {{ student.department }} - {{ student.email }}
+                <a href="/student/email?email={{ student.email }}">View Details</a>
+                <form action="/student/{{ student.id }}/delete" method="POST" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+                <a href="/student/{{ student.id }}/qrcode">Generate QR Code</a>
+                {% if student.qr_code_file %}
+                    <a href="/static/qrcodes/{{ student.qr_code_file }}" download>Download QR Code</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
