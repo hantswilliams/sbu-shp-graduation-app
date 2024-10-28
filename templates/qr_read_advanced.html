@@ -53,7 +53,7 @@
                             <p><strong>Department:</strong> ${data.department}</p>
                             <p><strong>Email:</strong> ${data.email}</p>
                             ${data.audio_file ? `<audio controls>
-                                <source src="/static/uploads/${data.audio_file}" type="audio/mpeg">
+                                <source src="${data.audio_file}" type="audio/mpeg">
                                 Your browser does not support the audio element.
                             </audio>` : '<p>No audio file available.</p>'}
                         `;
@@ -73,7 +73,7 @@
         }
 
         let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: 250 }
+            "reader", { fps: 10, qrbox: 500 }
         );
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     </script>

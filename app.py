@@ -12,8 +12,9 @@ import cv2
 # Flask App Setup
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
-app.config['UPLOAD_FOLDER'] = 'uploads/'
+app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+print(app.config['UPLOAD_FOLDER'])
 
 db = SQLAlchemy(app)
 
@@ -24,7 +25,8 @@ class Student(db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     department = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    audio_file = db.Column(db.String(200), nullable=True)
+    audio_file = db.Column(db.LargeBinary, nullable=True)  # Change to BLOB to store binary audio data
+    audio_filename = db.Column(db.String(200), nullable=True)  # Store filename if needed for extensions
     qr_code_file = db.Column(db.String(200), nullable=True)  # New column to store QR code file name
 
 # Routes for Basic CRUD
@@ -42,16 +44,24 @@ def add_student():
         email = request.form['email']
         audio = request.files['audio']
 
-        if audio:
+        audio_data = None
+        audio_filename = None
+        if audio and audio.filename != '':
             audio_filename = secure_filename(audio.filename)
-            audio.save(os.path.join(app.config['UPLOAD_FOLDER'], audio_filename))
-        else:
-            audio_filename = None
+            audio_data = audio.read()  # Read file data as binary
 
-        new_student = Student(first_name=first_name, last_name=last_name, department=department, email=email, audio_file=audio_filename)
+        new_student = Student(
+            first_name=first_name,
+            last_name=last_name,
+            department=department,
+            email=email,
+            audio_file=audio_data,
+            audio_filename=audio_filename
+        )
         db.session.add(new_student)
         db.session.commit()
         return redirect(url_for('index'))
+
     return render_template('add_student.html')
 
 @app.route('/student/<int:id>/delete', methods=['POST'])
@@ -161,6 +171,16 @@ def play_audio(id):
         return redirect(url_for('static', filename='uploads/' + student.audio_file))
     return "Audio not available"
 
+@app.route('/student/<int:id>/audio')
+def get_audio(id):
+    student = Student.query.get_or_404(id)
+    if student.audio_file:
+        return (student.audio_file, {
+            'Content-Type': 'audio/mpeg',
+            'Content-Disposition': f'inline; filename="{student.audio_filename}"'
+        })
+    return "Audio not available", 404
+
 @app.route('/scan/advanced')
 def qr_read_advanced():
     return render_template('qr_read_advanced.html')
@@ -174,9 +194,49 @@ def api_get_student(id):
         'last_name': student.last_name,
         'department': student.department,
         'email': student.email,
-        'audio_file': student.audio_file
+        'audio_file': f"/student/{student.id}/audio" if student.audio_file else None  # Providing a URL instead of raw binary data
     }
     return jsonify(student_data)
+
+@app.route('/api/student/<int:id>', methods=['PUT'])
+def api_update_student(id):
+    student = Student.query.get_or_404(id)
+    data = request.get_json()
+
+    student.first_name = data.get('first_name', student.first_name)
+    student.last_name = data.get('last_name', student.last_name)
+    student.department = data.get('department', student.department)
+    student.email = data.get('email', student.email)
+
+    if 'audio_file' in data:
+        # Note: This assumes audio_file is a string filename; handling file uploads through API may need different logic
+        student.audio_file = data['audio_file']
+
+    db.session.commit()
+    return jsonify({"message": "Student updated successfully."}), 200
+
+
+@app.route('/student/<int:id>/edit', methods=['GET', 'POST'])
+def edit_student(id):
+    student = Student.query.get_or_404(id)
+    if request.method == 'POST':
+        student.first_name = request.form['first_name']
+        student.last_name = request.form['last_name']
+        student.department = request.form['department']
+        student.email = request.form['email']
+
+        if 'audio' in request.files:
+            audio = request.files['audio']
+            if audio and audio.filename != '':
+                audio_filename = secure_filename(audio.filename)
+                student.audio_file = audio.read()  # Store the binary data in the database
+                student.audio_filename = audio_filename
+
+        db.session.commit()
+        return redirect(url_for('view_student', id=student.id))
+
+    return render_template('edit_student.html', student=student)
+
 
 # Run the App
 if __name__ == '__main__':

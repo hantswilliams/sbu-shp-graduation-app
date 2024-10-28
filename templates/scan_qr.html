@@ -14,10 +14,13 @@
         function onScanSuccess(decodedText, decodedResult) {
             // Handle the result of the scan
             let studentData = {};
+            
             decodedText.split(',').forEach(function(part) {
                 let keyValue = part.split(':');
                 studentData[keyValue[0].trim()] = keyValue[1].trim();
             });
+
+            console.log(studentData);
 
             if (studentData['id']) {
                 window.location.href = `/student/${studentData['id']}`;

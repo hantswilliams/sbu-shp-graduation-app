@@ -12,7 +12,7 @@
     <p><strong>Email:</strong> {{ student.email }}</p>
     {% if student.audio_file %}
         <audio controls>
-            <source src="/static/uploads/{{ student.audio_file }}" type="audio/mpeg">
+            <source src="/student/{{ student.id }}/audio" type="audio/mpeg">
             Your browser does not support the audio element.
         </audio>
     {% else %}
@@ -23,5 +23,6 @@
         <img src="/static/qrcodes/{{ student.qr_code_file }}" alt="QR Code">
     {% endif %}
     <a href="/">Back to Student List</a>
+    <a href="/student/{{ student.id }}/edit">Edit Student</a>
 </body>
 </html>
