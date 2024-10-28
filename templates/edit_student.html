@@ -46,19 +46,23 @@
         document.addEventListener('DOMContentLoaded', () => {
             let mediaRecorder;
             let recordedChunks = [];
-            let audioContext, gainNode, sourceNode;
-
-            // Recording functionality for new audio
             const startRecordButton = document.getElementById('startRecord');
             const stopRecordButton = document.getElementById('stopRecord');
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-            if (startRecordButton && stopRecordButton) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 startRecordButton.addEventListener('click', async () => {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        mediaRecorder = new MediaRecorder(stream);
+                        const mimeType = isSafari ? 'audio/mp4' : 'audio/webm';
+                        if (MediaRecorder.isTypeSupported(mimeType)) {
+                            mediaRecorder = new MediaRecorder(stream, { mimeType });
+                        } else {
+                            alert("Your browser does not support audio recording in the required format.");
+                            return;
+                        }
 
-                        recordedChunks = [];  // Clear previous chunks before recording a new audio
+                        recordedChunks = [];  // Clear previous recordings
 
                         mediaRecorder.ondataavailable = event => {
                             if (event.data.size > 0) {
@@ -68,7 +72,7 @@
 
                         mediaRecorder.onstop = () => {
                             if (recordedChunks.length > 0) {
-                                const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                                const blob = new Blob(recordedChunks, { type: mimeType });
                                 const audioURL = URL.createObjectURL(blob);
                                 document.getElementById('recordedAudio').src = audioURL;
 
@@ -88,7 +92,7 @@
                         stopRecordButton.disabled = false;
                     } catch (err) {
                         console.error("Error accessing microphone: ", err);
-                        alert("Failed to access microphone. Please ensure that it is not being used by another application and try again.");
+                        alert("Failed to access microphone. Please ensure it is enabled and try again.");
                     }
                 });
 
@@ -99,6 +103,8 @@
                     startRecordButton.disabled = false;
                     stopRecordButton.disabled = true;
                 });
+            } else {
+                alert("Your browser does not support audio recording.");
             }
         });
     </script>

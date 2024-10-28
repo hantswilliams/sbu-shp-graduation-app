@@ -241,30 +241,42 @@ def edit_student(id):
             header, encoded = amplified_audio_data.split(',', 1)
             audio_data = base64.b64decode(encoded)
 
-            # Save the audio temporarily as webm
-            temp_webm_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_audio.webm')
-            with open(temp_webm_path, 'wb') as temp_file:
+            # Determine format based on browser (Safari or other) and save accordingly
+            is_safari = 'audio/mp4' in header
+            temp_audio_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_audio.' + ('mp4' if is_safari else 'webm'))
+            
+            with open(temp_audio_path, 'wb') as temp_file:
                 temp_file.write(audio_data)
 
-            # Convert webm to mp3
-            audio = AudioSegment.from_file(temp_webm_path, format="webm")
-            mp3_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{student.id}_audio.mp3")
-            audio.export(mp3_path, format="mp3")
+            # Convert to MP3 based on format
+            try:
+                if is_safari:
+                    audio = AudioSegment.from_file(temp_audio_path, format="mp4")
+                else:
+                    audio = AudioSegment.from_file(temp_audio_path, format="webm")
+                
+                # Save as MP3
+                mp3_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{student.id}_audio.mp3")
+                audio.export(mp3_path, format="mp3")
 
-            # Save the MP3 data and filename in the database
-            with open(mp3_path, 'rb') as mp3_file:
-                student.audio_file = mp3_file.read()
-                student.audio_filename = f"{student.id}_audio.mp3"
-
-            os.remove(temp_webm_path)  # Clean up temporary webm file
+                # Save the MP3 data and filename in the database
+                with open(mp3_path, 'rb') as mp3_file:
+                    student.audio_file = mp3_file.read()
+                    student.audio_filename = f"{student.id}_audio.mp3"
+            except Exception as e:
+                print("Error converting audio file:", e)
+                return "Audio conversion error", 500
+            finally:
+                os.remove(temp_audio_path)  # Clean up temporary audio file
 
         db.session.commit()
         return redirect(url_for('view_student', id=student.id))
 
     return render_template('edit_student.html', student=student)
 
+
 # Run the App
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(debug=True, port=5005, host='0.0.0.0')
